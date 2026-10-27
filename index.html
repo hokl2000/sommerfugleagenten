@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sommerfugleagenten</title>
+<style>
+  :root {
+    --bg: #094223;
+    --text: #F4F1EA;
+    --muted: #9CAF88;
+    --accent: #4F5D47;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .wordmark {
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+  .pill {
+    background: var(--accent);
+    color: var(--text);
+    font-size: 0.8rem;
+    padding: 2px 12px;
+    border-radius: 999px;
+  }
+  h1 {
+    font-family: Georgia, serif;
+    font-size: 2rem;
+    line-height: 1.2;
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+  }
+  .sub {
+    color: var(--muted);
+    margin: 0 0 24px;
+  }
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  input {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 1rem;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+  }
+  input::placeholder { color: var(--muted); }
+  button {
+    padding: 10px 16px;
+    font-size: 1rem;
+    color: var(--text);
+    background: var(--accent);
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--text); }
+  input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--accent);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  li .page { color: var(--muted); white-space: nowrap; }
+  .result-title {
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .message { color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+  footer {
+    margin-top: 40px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  footer h2 {
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin: 0 0 4px;
+  }
+  footer p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="wordmark">Sommerfugleagenten</span>
+    <span class="pill">v0.1 demo</span>
+  </header>
+
+  <div id="lock">
+    <form id="lock-form" autocomplete="off">
+      <input id="password" type="password" placeholder="Adgangskode" aria-label="Adgangskode" autocomplete="off">
+      <button type="submit">Lås op</button>
+    </form>
+    <p id="lock-message" class="message" aria-live="polite"></p>
+  </div>
+
+  <div id="app" hidden>
+    <h1>Input sommerfuglen. Få værtsplanterne</h1>
+    <p class="sub">Her kan du få hjælp med hvilke værtsplanter der understøtter de forskellige sommerfugle</p>
+
+    <form id="form" autocomplete="off">
+      <input id="name" type="text" list="butterflies" placeholder="Sommerfugl" aria-label="Navn på sommerfugl">
+      <datalist id="butterflies"></datalist>
+      <button type="submit">Input sommerfugl</button>
+      <button type="button" id="nectar-btn">Nektarplanter</button>
+    </form>
+
+    <div id="result" aria-live="polite"></div>
+
+    <footer>
+      <h2>Hvad guiden ikke dækker endnu</h2>
+      <p>Natsommerfugle, nektarplanter koblet til bestemte arter og flere dagsommerfugle (fx svalehale, lille kålsommerfugl og okkergul pletvinge).</p>
+    </footer>
+  </div>
+</main>
+
+<script>
+  var rows = [];
+  var nectar = null;
+  var result = document.getElementById("result");
+
+  function norm(s) {
+    return s.trim().toLowerCase();
+  }
+
+  function showMessage(text) {
+    result.replaceChildren();
+    var p = document.createElement("p");
+    p.className = "message";
+    p.textContent = text;
+    result.appendChild(p);
+  }
+
+  function search() {
+    var typed = document.getElementById("name").value;
+    var q = norm(typed);
+    if (!q) {
+      showMessage("Skriv navnet på en sommerfugl.");
+      return;
+    }
+    var hits = rows.filter(function (r) { return norm(r.butterfly) === q; });
+    if (hits.length === 0) {
+      showMessage("Ingen data for nuværende om " + typed.trim() + ".");
+      return;
+    }
+    result.replaceChildren(buildList(hits));
+  }
+
+  function buildList(items) {
+    var ul = document.createElement("ul");
+    items.forEach(function (r) {
+      var li = document.createElement("li");
+      var name = document.createElement("span");
+      name.textContent = r.plant;
+      var page = document.createElement("span");
+      page.className = "page";
+      page.textContent = "s. " + r.page;
+      li.appendChild(name);
+      li.appendChild(page);
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  function showNectar() {
+    if (nectar === null) {
+      showMessage("Kunne ikke indlæse nektarplanter.");
+      return;
+    }
+    var h = document.createElement("h2");
+    h.className = "result-title";
+    h.textContent = "Nektarplanter i kataloget";
+    result.replaceChildren(h, buildList(nectar));
+  }
+
+  document.getElementById("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    search();
+  });
+
+  document.getElementById("nectar-btn").addEventListener("click", showNectar);
+
+  var lockMessage = document.getElementById("lock-message");
+  var encrypted = null;
+
+  function b64(s) {
+    return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
+  }
+
+  function showData(data) {
+    rows = data.pairs;
+    nectar = data.nectar;
+    var names = Array.from(new Set(rows.map(function (r) { return r.butterfly; })))
+      .sort(function (a, b) { return a.localeCompare(b, "da"); });
+    var list = document.getElementById("butterflies");
+    names.forEach(function (n) {
+      var o = document.createElement("option");
+      o.value = n;
+      list.appendChild(o);
+    });
+  }
+
+  async function decrypt(password) {
+    var enc = new TextEncoder();
+    var baseKey = await crypto.subtle.importKey(
+      "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+    var key = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", hash: "SHA-256", salt: b64(encrypted.salt), iterations: encrypted.iter },
+      baseKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    var plain = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: b64(encrypted.iv) }, key, b64(encrypted.data));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  document.getElementById("lock-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var input = document.getElementById("password");
+    if (!encrypted) {
+      lockMessage.textContent = "Kunne ikke indlæse data.";
+      return;
+    }
+    lockMessage.textContent = "";
+    var data;
+    try {
+      data = await decrypt(input.value);
+    } catch (err) {
+      lockMessage.textContent = "Forkert adgangskode.";
+      return;
+    }
+    input.value = "";
+    showData(data);
+    document.getElementById("lock").hidden = true;
+    document.getElementById("app").hidden = false;
+  });
+
+  fetch("data.enc.json")
+    .then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function (data) { encrypted = data; })
+    .catch(function () {
+      lockMessage.textContent = "Kunne ikke indlæse data.";
+    });
+</script>
+</body>
+</html>
