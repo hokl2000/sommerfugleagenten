@@ -108,6 +108,28 @@
     margin: 0 0 8px;
   }
   .message { color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+  .ask { margin-top: 40px; }
+  .ask h2 {
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+    margin: 0 0 8px;
+  }
+  .card {
+    background: var(--accent);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  .card summary { cursor: pointer; font-family: Georgia, serif; }
+  .card .body { white-space: pre-wrap; margin: 8px 0 0; overflow-wrap: anywhere; }
+  .answer { overflow-wrap: anywhere; }
+  .answer .seg { white-space: pre-wrap; }
+  .answer small { display: block; margin-top: 4px; }
+  .answer .big { font-size: 1.25rem; line-height: 1.4; white-space: pre-wrap; }
+  .answer .maybe { margin-top: 16px; }
+  .answer .maybe summary { cursor: pointer; color: var(--muted); }
+  .answer .maybe .answer-block { margin-top: 8px; }
+  #sources-title { margin: 16px 0 8px; }
   footer {
     margin-top: 40px;
     font-size: 0.85rem;
@@ -149,9 +171,28 @@
 
     <div id="result" aria-live="polite"></div>
 
+    <section class="ask">
+      <h2>Spørg om ambassadørarbejdet</h2>
+      <p class="sub">Svarene er sætninger fra 'Kom godt i gang', fundet af en AI-søgning. Læs altid hele afsnittet.</p>
+      <form id="ask-form" autocomplete="off">
+        <input id="question" type="text" placeholder="Dit spørgsmål" aria-label="Spørgsmål om ambassadørarbejdet">
+        <button type="submit" id="ask-btn">Spørg</button>
+      </form>
+      <p id="ask-status" class="message" aria-live="polite"></p>
+      <h3 id="answer-title" class="result-title" hidden>Svar</h3>
+      <div id="answer" class="card answer" aria-live="polite" hidden></div>
+      <h3 id="sources-title" class="result-title" hidden>Kilder</h3>
+      <div id="sources"></div>
+    </section>
+
     <footer>
       <h2>Hvad guiden ikke dækker endnu</h2>
       <p>Natsommerfugle, nektarplanter koblet til bestemte arter og flere dagsommerfugle (fx svalehale, lille kålsommerfugl og okkergul pletvinge).</p>
+    </footer>
+
+    <footer>
+      <p>Søgemodellen hentes fra Hugging Face og jsDelivr. Dine spørgsmål forlader ikke din computer.</p>
+      <p>Søgning: multilingual-e5-small (MIT).</p>
     </footer>
   </div>
 </main>
@@ -232,6 +273,9 @@
   function showData(data) {
     rows = data.pairs;
     nectar = data.nectar;
+    guide = data.guide || [];
+    guideIndex = data.guide_index || null;
+    if (guideIndex) startIndexing();
     var names = Array.from(new Set(rows.map(function (r) { return r.butterfly; })))
       .sort(function (a, b) { return a.localeCompare(b, "da"); });
     var list = document.getElementById("butterflies");
@@ -273,6 +317,235 @@
     showData(data);
     document.getElementById("lock").hidden = true;
     document.getElementById("app").hidden = false;
+  });
+
+  // ---- Spørg om ambassadørarbejdet ----
+  var MIN_SCORE = 0.83; // best cosine score below this: "Det står ikke i materialet."
+  var NEAR_SCORE = 0.02; // a block with another best hit is shown too if within this of the best
+  var TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
+  var EMBED_MODEL = "Xenova/multilingual-e5-small";
+  var BULLET = /^(?:[-*•]\s+|\d+[.)]\s+)/;
+
+  var guide = [];
+  var guideIndex = null; // data.guide_index: { model, dtype, created, chunks }
+  var blocks = [];  // { section, segments: [[{ text, pt }]] }; pt indexes into the punkt chunks
+  var items = [];   // all chunks: { type: "blok"|"punkt", text, block, pt, leadLine }
+  var vectors = [];
+  var extractor = null;
+  var indexPromise = null;
+  var busy = false;
+  var askStatus = document.getElementById("ask-status");
+  var askBtn = document.getElementById("ask-btn");
+  var answerTitle = document.getElementById("answer-title");
+  var answerBox = document.getElementById("answer");
+  var sourcesTitle = document.getElementById("sources-title");
+  var sourcesBox = document.getElementById("sources");
+
+  function fail(err) {
+    var msg = err && err.message ? err.message : String(err);
+    console.error("[guide] Fejl:", err);
+    askStatus.textContent = "Fejl: " + msg;
+  }
+
+  // Blocks, items and vectors come precomputed from guide_index.json (built by
+  // build_guide_index.mjs). Only the question is embedded in the browser.
+  function startIndexing() {
+    if (indexPromise || guide.length === 0) return;
+    var chunks = guideIndex.chunks;
+    blocks = [];
+    items = [];
+    vectors = [];
+    chunks.forEach(function (c) {
+      if (c.type === "blok") blocks[c.block] = { section: c.section, segments: c.segments };
+      items.push({ type: c.type, text: c.text, block: c.block, pt: c.pt, leadLine: c.leadLine });
+      vectors.push(Float32Array.from(c.vector));
+    });
+    console.log("[guide] " + blocks.length + " blokke og " + (items.length - blocks.length) +
+      " punkter i " + guide.length + " afsnit");
+    if (guideIndex.model !== EMBED_MODEL) {
+      console.warn("[guide] guide_index.model (" + guideIndex.model + ") er ikke den samme som søgemodellen her (" + EMBED_MODEL + ")");
+    }
+    busy = true;
+    askBtn.disabled = true;
+    askStatus.textContent = "Forbereder søgning …";
+    indexPromise = (async function () {
+      var mod = await import(TRANSFORMERS_URL);
+      extractor = await mod.pipeline("feature-extraction", EMBED_MODEL, { dtype: guideIndex.dtype });
+      askStatus.textContent = "";
+    })();
+    indexPromise.catch(fail).then(function () {
+      busy = false;
+      askBtn.disabled = false;
+    });
+  }
+
+  function card(parent, title, body) {
+    var d = document.createElement("details");
+    d.className = "card";
+    var s = document.createElement("summary");
+    s.textContent = title;
+    var p = document.createElement("p");
+    p.className = "body";
+    p.textContent = body;
+    d.appendChild(s);
+    d.appendChild(p);
+    parent.appendChild(d);
+  }
+
+  function renderSources(sectionIndexes, title) {
+    sourcesBox.replaceChildren();
+    sourcesTitle.textContent = title;
+    sourcesTitle.hidden = sectionIndexes.length === 0;
+    sectionIndexes.forEach(function (i) {
+      card(sourcesBox, guide[i].title, guide[i].text);
+    });
+  }
+
+  // Shows a whole block line by line; the hit point (if any) is bold.
+  function renderBlock(hit, parent, hideFrom) {
+    var block = blocks[hit.block];
+    var wrap = document.createElement("div");
+    wrap.className = "answer-block";
+    // A block with a single point would be bold from end to end: no highlight then.
+    var highlight = hit.type === "punkt" && block.segments.reduce(function (n, s) {
+      return n + s.length;
+    }, 0) > 1;
+    block.segments.forEach(function (seg) {
+      var line = document.createElement("div");
+      line.className = "seg";
+      seg.forEach(function (part, i) {
+        if (i > 0) line.appendChild(document.createTextNode(" "));
+        if (highlight && part.pt === hit.pt) {
+          var strong = document.createElement("strong");
+          strong.textContent = part.text;
+          line.appendChild(strong);
+        } else {
+          line.appendChild(document.createTextNode(part.text));
+        }
+      });
+      wrap.appendChild(line);
+    });
+    if (!hideFrom) {
+      var from = document.createElement("small");
+      from.className = "message";
+      from.textContent = "fra: " + guide[block.section].title;
+      wrap.appendChild(from);
+    }
+    parent.appendChild(wrap);
+  }
+
+  // A whole block, or a hit in the block's first (introductory) line, shows the whole block.
+  function hitsWholeBlock(hit) {
+    return hit.type === "blok" ||
+      blocks[hit.block].segments[0].some(function (p) { return p.pt === hit.pt; });
+  }
+
+  // A list item or sentence further down: show only that point, large, with the whole
+  // block folded away below it.
+  function renderAnswer(hit, parent) {
+    if (hitsWholeBlock(hit)) {
+      renderBlock(hit, parent);
+      return;
+    }
+    var wrap = document.createElement("div");
+    wrap.className = "answer-block";
+    var big = document.createElement("div");
+    big.className = "big";
+    big.textContent = hit.text.replace(BULLET, "");
+    wrap.appendChild(big);
+    var from = document.createElement("small");
+    from.className = "message";
+    from.textContent = "fra: " + guide[blocks[hit.block].section].title;
+    wrap.appendChild(from);
+    var all = document.createElement("details");
+    all.className = "maybe";
+    var allTitle = document.createElement("summary");
+    allTitle.textContent = "Se hele listen";
+    all.appendChild(allTitle);
+    renderBlock(hit, all, true);
+    wrap.appendChild(all);
+    parent.appendChild(wrap);
+  }
+
+  async function ask() {
+    if (busy) return;
+    var q = document.getElementById("question").value.trim();
+    if (!q) {
+      askStatus.textContent = "Skriv et spørgsmål.";
+      return;
+    }
+    if (items.length === 0) {
+      askStatus.textContent = "Ingen afsnit at søge i.";
+      return;
+    }
+    answerTitle.hidden = true;
+    answerBox.hidden = true;
+    answerBox.replaceChildren();
+    sourcesBox.replaceChildren();
+    sourcesTitle.hidden = true;
+    busy = true;
+    askBtn.disabled = true;
+    try {
+      askStatus.textContent = "Søger …";
+      await indexPromise;
+      var out = await extractor("query: " + q, { pooling: "mean", normalize: true });
+      var qv = out.data;
+      var scored = vectors.map(function (v, i) {
+        var dot = 0;
+        for (var k = 0; k < v.length; k++) dot += v[k] * qv[k];
+        return { type: items[i].type, block: items[i].block, pt: items[i].pt, text: items[i].text, score: dot };
+      });
+      scored.sort(function (a, b) { return b.score - a.score; });
+      console.log("[guide] De 5 bedste:\n" + scored.slice(0, 5).map(function (h) {
+        return h.type + " | " + h.score.toFixed(3) + " | " + h.text.replace(/\s+/g, " ").slice(0, 60);
+      }).join("\n"));
+      askStatus.textContent = "";
+
+      function sectionOf(h) { return blocks[h.block].section; }
+
+      if (scored[0].score < MIN_SCORE) {
+        console.log("[guide] Bedste score " + scored[0].score.toFixed(3) + " < MIN_SCORE " + MIN_SCORE);
+        answerBox.textContent = "Det står ikke i materialet.";
+        answerBox.hidden = false;
+        var nearest = [];
+        scored.forEach(function (h) {
+          if (nearest.length < 3 && nearest.indexOf(sectionOf(h)) === -1) nearest.push(sectionOf(h));
+        });
+        renderSources(nearest, "Nærmeste afsnit");
+        return;
+      }
+      var shown = [scored[0]];
+      var other = scored.find(function (h) { return h.block !== scored[0].block; });
+      if (other && scored[0].score - other.score <= NEAR_SCORE) shown.push(other);
+      renderAnswer(shown[0], answerBox);
+      if (shown[1]) {
+        // The extra block is only a maybe: collapsed, below the answer.
+        var maybe = document.createElement("details");
+        maybe.className = "maybe";
+        var maybeTitle = document.createElement("summary");
+        maybeTitle.textContent = "Måske også relevant";
+        maybe.appendChild(maybeTitle);
+        renderBlock(shown[1], maybe);
+        answerBox.appendChild(maybe);
+      }
+      answerTitle.hidden = false;
+      answerBox.hidden = false;
+      var sections = [];
+      shown.forEach(function (h) {
+        if (sections.indexOf(sectionOf(h)) === -1) sections.push(sectionOf(h));
+      });
+      renderSources(sections, "Kilder");
+    } catch (err) {
+      fail(err);
+    } finally {
+      busy = false;
+      askBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("ask-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    ask();
   });
 
   fetch("data.enc.json")
