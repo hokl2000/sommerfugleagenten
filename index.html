@@ -138,11 +138,13 @@
       <h2 class="view-title">Ask the guide</h2>
       <p id="mode-line" class="message" aria-live="polite"></p>
       <p id="search-status" class="message" aria-live="polite"></p>
+      <p id="search-note" class="message" hidden>If this is your first visit, the search model (about 560 MB) is downloaded now. This happens only once – next time it loads in seconds.</p>
       <div class="row">
         <button type="button" id="load-btn" hidden>Load AI answers</button>
         <button type="button" id="reset-btn" disabled>New conversation</button>
       </div>
       <p id="ai-status" class="message" aria-live="polite"></p>
+      <p id="ai-note" class="message" hidden>If this is the first time, the AI model (about 1 GB) is downloaded now. This happens only once.</p>
 
       <form id="ask-form" autocomplete="off">
         <input id="question" type="text" placeholder="Your question" aria-label="Your question" disabled>
@@ -283,6 +285,8 @@
   var modeLine = document.getElementById("mode-line");
   var searchStatus = document.getElementById("search-status");
   var aiStatus = document.getElementById("ai-status");
+  var searchNote = document.getElementById("search-note");
+  var aiNote = document.getElementById("ai-note");
   var statusLine = document.getElementById("status");
   var loadBtn = document.getElementById("load-btn");
   var resetBtn = document.getElementById("reset-btn");
@@ -424,6 +428,7 @@
     searchChunks = index.chunks;
     searchVectors = index.chunks.map(function (c) { return Float32Array.from(c.vector); });
     searchStatus.textContent = "Loading search model " + index.model + " ...";
+    searchNote.hidden = false;
     try {
       var mod = await import(TRANSFORMERS_URL);
       searchExtractor = await mod.pipeline("feature-extraction", index.model, {
@@ -443,6 +448,7 @@
       console.error("[gate] Error:", err);
       searchStatus.textContent = "Error loading search model: " + (err && err.message ? err.message : String(err));
     }
+    searchNote.hidden = true; // ready or failed
     updateButtons();
   }
 
@@ -504,6 +510,7 @@
     loading = true;
     updateButtons();
     aiStatus.textContent = "Loading " + LLM_ID + " ...";
+    aiNote.hidden = false;
     var t0 = performance.now();
     try {
       var webllm = await import(WEBLLM_URL);
@@ -524,6 +531,7 @@
       aiStatus.textContent = "The AI model could not be loaded: " + (err && err.message ? err.message : String(err)) +
         ". Answering with search only.";
     } finally {
+      aiNote.hidden = true; // ready or failed
       loading = false;
       updateButtons();
     }
