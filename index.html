@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,23 +19,15 @@
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     line-height: 1.5;
   }
-  main {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 24px 16px 48px;
-  }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
   header {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 12px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
-  .wordmark {
-    font-family: Georgia, serif;
-    font-size: 1.25rem;
-    font-weight: bold;
-  }
+  .wordmark { font-family: Georgia, serif; font-size: 1.25rem; font-weight: bold; }
   .pill {
     background: var(--accent);
     color: var(--text);
@@ -50,16 +42,9 @@
     margin: 0 0 12px;
     overflow-wrap: anywhere;
   }
-  .sub {
-    color: var(--muted);
-    margin: 0 0 24px;
-  }
-  form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 24px;
-  }
+  h2.view-title { font-family: Georgia, serif; font-size: 1.5rem; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  form, .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   input {
     flex: 1 1 180px;
     min-width: 0;
@@ -80,11 +65,14 @@
     border-radius: 8px;
     cursor: pointer;
   }
-  button:hover { border-color: var(--text); }
+  button:hover:not(:disabled) { border-color: var(--text); }
+  button:disabled { opacity: 0.5; cursor: default; }
   input:focus-visible, button:focus-visible {
     outline: 2px solid var(--text);
     outline-offset: 2px;
   }
+  .nav { margin-bottom: 24px; }
+  .nav button[aria-pressed="true"] { border-color: var(--text); font-weight: bold; }
   ul {
     list-style: none;
     margin: 0;
@@ -107,97 +95,96 @@
     color: var(--muted);
     margin: 0 0 8px;
   }
-  .message { color: var(--muted); margin: 0; overflow-wrap: anywhere; }
-  .ask { margin-top: 40px; }
-  .ask h2 {
-    font-family: Georgia, serif;
-    font-size: 1.25rem;
-    margin: 0 0 8px;
-  }
-  .card {
-    background: var(--accent);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 8px;
-  }
-  .card summary { cursor: pointer; font-family: Georgia, serif; }
-  .card .body { white-space: pre-wrap; margin: 8px 0 0; overflow-wrap: anywhere; }
-  .answer { overflow-wrap: anywhere; }
-  .answer .seg { white-space: pre-wrap; }
-  .answer small { display: block; margin-top: 4px; }
-  .answer .big { font-size: 1.25rem; line-height: 1.4; white-space: pre-wrap; }
-  .answer .maybe { margin-top: 16px; }
-  .answer .maybe summary { cursor: pointer; color: var(--muted); }
-  .answer .maybe .answer-block { margin-top: 8px; }
-  #sources-title { margin: 16px 0 8px; }
-  footer {
-    margin-top: 40px;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-  footer h2 {
-    font-size: 0.85rem;
-    font-weight: bold;
-    margin: 0 0 4px;
-  }
+  .message { color: var(--muted); margin: 0 0 16px; overflow-wrap: anywhere; }
+  #result .message { margin: 0; }
+  .turn { background: var(--accent); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; }
+  .turn .q { color: var(--muted); margin: 0 0 4px; overflow-wrap: anywhere; }
+  .turn .a { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .turn .notice { color: var(--muted); font-size: 0.85rem; margin: 8px 0 0; }
+  .turn .src-label { color: var(--muted); font-size: 0.85rem; margin: 12px 0 2px; }
+  .turn .src { margin: 0; font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #earlier-title { margin-top: 24px; }
+  #earlier .turn { background: transparent; border: 1px solid var(--accent); font-size: 0.85rem; color: var(--muted); }
+  #earlier .turn .a, #earlier .turn .src, #earlier .turn .notice { font-size: 0.85rem; color: var(--muted); }
+  footer { margin-top: 40px; font-size: 0.85rem; color: var(--muted); }
+  footer h2 { font-size: 0.85rem; font-weight: bold; margin: 0 0 4px; }
   footer p { margin: 0; }
+  footer + footer { margin-top: 16px; }
 </style>
 </head>
 <body>
 <main>
   <header>
     <span class="wordmark">Sommerfugleagenten</span>
-    <span class="pill">v0.1 demo</span>
+    <span class="pill">v0.2 demo</span>
   </header>
 
   <div id="lock">
     <form id="lock-form" autocomplete="off">
-      <input id="password" type="password" placeholder="Adgangskode" aria-label="Adgangskode" autocomplete="off">
-      <button type="submit">Lås op</button>
+      <input id="password" type="password" placeholder="Password" aria-label="Password" autocomplete="off">
+      <button type="submit">Unlock</button>
     </form>
     <p id="lock-message" class="message" aria-live="polite"></p>
   </div>
 
   <div id="app" hidden>
-    <h1>Input sommerfuglen. Få værtsplanterne</h1>
-    <p class="sub">Her kan du få hjælp med hvilke værtsplanter der understøtter de forskellige sommerfugle</p>
+    <div class="row nav">
+      <button type="button" id="nav-guide" aria-pressed="true">Ask the guide</button>
+      <button type="button" id="nav-butterflies" aria-pressed="false">Butterflies &amp; plants</button>
+    </div>
 
-    <form id="form" autocomplete="off">
-      <input id="name" type="text" list="butterflies" placeholder="Sommerfugl" aria-label="Navn på sommerfugl">
-      <datalist id="butterflies"></datalist>
-      <button type="submit">Input sommerfugl</button>
-      <button type="button" id="nectar-btn">Nektarplanter</button>
-    </form>
+    <!-- View 1: ask the guide -->
+    <section id="view-guide">
+      <h2 class="view-title">Ask the guide</h2>
+      <p id="mode-line" class="message" aria-live="polite"></p>
+      <p id="search-status" class="message" aria-live="polite"></p>
+      <div class="row">
+        <button type="button" id="load-btn" hidden>Load AI answers</button>
+        <button type="button" id="reset-btn" disabled>New conversation</button>
+      </div>
+      <p id="ai-status" class="message" aria-live="polite"></p>
 
-    <div id="result" aria-live="polite"></div>
-
-    <section class="ask">
-      <h2>Spørg om ambassadørarbejdet</h2>
-      <p class="sub">Svarene er sætninger fra 'Kom godt i gang', fundet af en AI-søgning. Læs altid hele afsnittet.</p>
       <form id="ask-form" autocomplete="off">
-        <input id="question" type="text" placeholder="Dit spørgsmål" aria-label="Spørgsmål om ambassadørarbejdet">
-        <button type="submit" id="ask-btn">Spørg</button>
+        <input id="question" type="text" placeholder="Your question" aria-label="Your question" disabled>
+        <button type="submit" id="ask-btn" disabled>Ask</button>
       </form>
-      <p id="ask-status" class="message" aria-live="polite"></p>
-      <h3 id="answer-title" class="result-title" hidden>Svar</h3>
-      <div id="answer" class="card answer" aria-live="polite" hidden></div>
-      <h3 id="sources-title" class="result-title" hidden>Kilder</h3>
-      <div id="sources"></div>
+      <p id="status" class="message" aria-live="polite"></p>
+
+      <div id="current" aria-live="polite"></div>
+      <h3 id="earlier-title" class="result-title" hidden>Earlier questions</h3>
+      <div id="earlier"></div>
     </section>
 
-    <footer>
-      <h2>Hvad guiden ikke dækker endnu</h2>
-      <p>Natsommerfugle, nektarplanter koblet til bestemte arter og flere dagsommerfugle (fx svalehale, lille kålsommerfugl og okkergul pletvinge).</p>
-    </footer>
+    <!-- View 2: butterflies and plants (same as index.html) -->
+    <section id="view-butterflies" hidden>
+      <h1>Input sommerfuglen. Få værtsplanterne</h1>
+      <p class="sub">Her kan du få hjælp med hvilke værtsplanter der understøtter de forskellige sommerfugle</p>
 
-    <footer>
-      <p>Søgemodellen hentes fra Hugging Face og jsDelivr. Dine spørgsmål forlader ikke din computer.</p>
-      <p>Søgning: multilingual-e5-small (MIT).</p>
-    </footer>
+      <form id="form" autocomplete="off">
+        <input id="name" type="text" list="butterflies" placeholder="Sommerfugl" aria-label="Navn på sommerfugl">
+        <datalist id="butterflies"></datalist>
+        <button type="submit">Input sommerfugl</button>
+        <button type="button" id="nectar-btn">Nektarplanter</button>
+      </form>
+
+      <div id="result" aria-live="polite"></div>
+
+      <footer>
+        <h2>Hvad guiden ikke dækker endnu</h2>
+        <p>Natsommerfugle, nektarplanter koblet til bestemte arter og flere dagsommerfugle (fx svalehale, lille kålsommerfugl og okkergul pletvinge).</p>
+      </footer>
+    </section>
   </div>
+
+  <footer>
+    <p>The models are downloaded from Hugging Face, jsDelivr and GitHub. Your questions do not leave your computer.</p>
+    <p>The model files are saved in your browser's cache so the next visit is faster. You can delete them in your browser's site settings.</p>
+    <p>Search: multilingual-e5-large (MIT) via Transformers.js (Apache 2.0) and ONNX Runtime (MIT). Answers: Qwen3-1.7B (Apache 2.0) via WebLLM (Apache 2.0).</p>
+  </footer>
 </main>
 
 <script>
+  // ---------- Butterfly lookup (copied from index.html) ----------
   var rows = [];
   var nectar = null;
   var result = document.getElementById("result");
@@ -263,27 +250,89 @@
 
   document.getElementById("nectar-btn").addEventListener("click", showNectar);
 
-  var lockMessage = document.getElementById("lock-message");
-  var encrypted = null;
+  // ---------- Navigation: only shows/hides, nothing is reloaded ----------
+  var viewGuide = document.getElementById("view-guide");
+  var viewButterflies = document.getElementById("view-butterflies");
+  var navGuide = document.getElementById("nav-guide");
+  var navButterflies = document.getElementById("nav-butterflies");
 
-  function b64(s) {
-    return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
+  function showView(name) {
+    var guideActive = name === "guide";
+    viewGuide.hidden = !guideActive;
+    viewButterflies.hidden = guideActive;
+    navGuide.setAttribute("aria-pressed", guideActive ? "true" : "false");
+    navButterflies.setAttribute("aria-pressed", guideActive ? "false" : "true");
+  }
+  navGuide.addEventListener("click", function () { showView("guide"); });
+  navButterflies.addEventListener("click", function () { showView("butterflies"); });
+
+  // ---------- Guide (from llm_test.html) ----------
+  var WEBLLM_URL = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.82/+esm";
+  var LLM_ID = "Qwen3-1.7B-q4f32_1-MLC";
+  var CHAT_OPTS = { context_window_size: 8192, temperature: 0 };
+  var RULES = "You answer questions from butterfly ambassadors. Use ONLY the guide below. " +
+    "Answer in English in 1-4 short sentences. Always answer from the guide.";
+  var TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
+  var GATE_MIN = 0.78; // best search score below this: no WebLLM call, nothing added to the conversation
+  var SOURCE_MIN = 0.83; // source score (question + answer) below this: the AI answer is replaced
+  var SENTENCE_MIN = 0.80; // any answer sentence scoring below this: the AI answer is replaced
+  var AI_NOTICE = "Written by an AI model from 'Kom godt i gang'. Check DN's text below.";
+  var SEARCH_NOTICE = "Svarene er sætninger fra 'Kom godt i gang', fundet af en AI-søgning. Læs altid hele afsnittet.";
+
+  var lockMessage = document.getElementById("lock-message");
+  var modeLine = document.getElementById("mode-line");
+  var searchStatus = document.getElementById("search-status");
+  var aiStatus = document.getElementById("ai-status");
+  var statusLine = document.getElementById("status");
+  var loadBtn = document.getElementById("load-btn");
+  var resetBtn = document.getElementById("reset-btn");
+  var questionInput = document.getElementById("question");
+  var askBtn = document.getElementById("ask-btn");
+  var currentBox = document.getElementById("current");
+  var earlierBox = document.getElementById("earlier");
+  var earlierTitle = document.getElementById("earlier-title");
+
+  var hasGpu = typeof navigator !== "undefined" && !!navigator.gpu;
+  var encrypted = null;
+  var systemMessage = null;
+  var messages = [];
+  var engine = null;
+  var aiBroken = false; // loading or generation failed for good (e.g. device lost)
+  var loading = false;
+  var generating = false;
+  var searchExtractor = null;
+  var searchChunks = [];  // data.guide_index.chunks
+  var searchVectors = []; // Float32Array per chunk
+
+  function aiActive() {
+    return !!engine && !aiBroken;
   }
 
-  function showData(data) {
-    rows = data.pairs;
-    nectar = data.nectar;
-    guide = data.guide || [];
-    guideIndex = data.guide_index || null;
-    if (guideIndex) startIndexing();
-    var names = Array.from(new Set(rows.map(function (r) { return r.butterfly; })))
-      .sort(function (a, b) { return a.localeCompare(b, "da"); });
-    var list = document.getElementById("butterflies");
-    names.forEach(function (n) {
-      var o = document.createElement("option");
-      o.value = n;
-      list.appendChild(o);
-    });
+  function updateMode() {
+    var text;
+    if (aiActive()) text = "Mode: AI answers";
+    else if (!hasGpu) text = "Mode: Search only (WebGPU is not available in this browser)";
+    else if (aiBroken) text = "Mode: Search only (the AI model failed)";
+    else if (loading) text = "Mode: Search only (loading the AI model ...)";
+    else text = "Mode: Search only";
+    modeLine.textContent = text;
+  }
+
+  function updateButtons() {
+    // Questions work in both modes as soon as the search model is ready.
+    // The field stays enabled while working, so the cursor stays in it; ask() ignores
+    // a second question until the first one is done.
+    askBtn.disabled = !searchExtractor || generating;
+    questionInput.disabled = !searchExtractor;
+    loadBtn.hidden = !hasGpu || !!engine || aiBroken;
+    loadBtn.disabled = loading || generating;
+    resetBtn.disabled = !aiActive() || generating;
+    updateMode();
+  }
+
+  // ---- Unlock (same as index.html, one unlock for both views) ----
+  function b64(s) {
+    return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
   }
 
   async function decrypt(password) {
@@ -298,11 +347,51 @@
     return JSON.parse(new TextDecoder().decode(plain));
   }
 
+  function showData(data) {
+    rows = data.pairs;
+    nectar = data.nectar;
+    var names = Array.from(new Set(rows.map(function (r) { return r.butterfly; })))
+      .sort(function (a, b) { return a.localeCompare(b, "da"); });
+    var list = document.getElementById("butterflies");
+    names.forEach(function (n) {
+      var o = document.createElement("option");
+      o.value = n;
+      list.appendChild(o);
+    });
+  }
+
+  // ---- The whole English guide as one text ----
+  function buildGuideText(chunks) {
+    var sections = []; // { title, texts: [] } in original order
+    var bySection = {};
+    chunks.forEach(function (c) {
+      if (c.type !== "blok") return;
+      if (!bySection[c.section]) {
+        bySection[c.section] = { title: c.title_en, texts: [] };
+        sections.push(bySection[c.section]);
+      }
+      bySection[c.section].texts.push(c.text_en);
+    });
+    var text = sections.map(function (s) {
+      return "## " + s.title + "\n\n" + s.texts.join("\n\n");
+    }).join("\n\n");
+    console.log("[llm] Guide: " + text.length + " characters, " + sections.length + " sections");
+    return { text: text, sections: sections.length };
+  }
+
+  function resetConversation() {
+    messages = [systemMessage];
+    currentBox.replaceChildren();
+    earlierBox.replaceChildren();
+    earlierTitle.hidden = true;
+    console.log("[llm] New conversation (system message only)");
+  }
+
   document.getElementById("lock-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     var input = document.getElementById("password");
     if (!encrypted) {
-      lockMessage.textContent = "Kunne ikke indlæse data.";
+      lockMessage.textContent = "Could not load data.";
       return;
     }
     lockMessage.textContent = "";
@@ -310,243 +399,338 @@
     try {
       data = await decrypt(input.value);
     } catch (err) {
-      lockMessage.textContent = "Forkert adgangskode.";
+      lockMessage.textContent = "Wrong password.";
       return;
     }
     input.value = "";
     showData(data);
     document.getElementById("lock").hidden = true;
     document.getElementById("app").hidden = false;
-  });
-
-  // ---- Spørg om ambassadørarbejdet ----
-  var MIN_SCORE = 0.83; // best cosine score below this: "Det står ikke i materialet."
-  var NEAR_SCORE = 0.02; // a block with another best hit is shown too if within this of the best
-  var TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
-  var EMBED_MODEL = "Xenova/multilingual-e5-small";
-  var BULLET = /^(?:[-*•]\s+|\d+[.)]\s+)/;
-
-  var guide = [];
-  var guideIndex = null; // data.guide_index: { model, dtype, created, chunks }
-  var blocks = [];  // { section, segments: [[{ text, pt }]] }; pt indexes into the punkt chunks
-  var items = [];   // all chunks: { type: "blok"|"punkt", text, block, pt, leadLine }
-  var vectors = [];
-  var extractor = null;
-  var indexPromise = null;
-  var busy = false;
-  var askStatus = document.getElementById("ask-status");
-  var askBtn = document.getElementById("ask-btn");
-  var answerTitle = document.getElementById("answer-title");
-  var answerBox = document.getElementById("answer");
-  var sourcesTitle = document.getElementById("sources-title");
-  var sourcesBox = document.getElementById("sources");
-
-  function fail(err) {
-    var msg = err && err.message ? err.message : String(err);
-    console.error("[guide] Fejl:", err);
-    askStatus.textContent = "Fejl: " + msg;
-  }
-
-  // Blocks, items and vectors come precomputed from guide_index.json (built by
-  // build_guide_index.mjs). Only the question is embedded in the browser.
-  function startIndexing() {
-    if (indexPromise || guide.length === 0) return;
-    var chunks = guideIndex.chunks;
-    blocks = [];
-    items = [];
-    vectors = [];
-    chunks.forEach(function (c) {
-      if (c.type === "blok") blocks[c.block] = { section: c.section, segments: c.segments };
-      items.push({ type: c.type, text: c.text, block: c.block, pt: c.pt, leadLine: c.leadLine });
-      vectors.push(Float32Array.from(c.vector));
-    });
-    console.log("[guide] " + blocks.length + " blokke og " + (items.length - blocks.length) +
-      " punkter i " + guide.length + " afsnit");
-    if (guideIndex.model !== EMBED_MODEL) {
-      console.warn("[guide] guide_index.model (" + guideIndex.model + ") er ikke den samme som søgemodellen her (" + EMBED_MODEL + ")");
-    }
-    busy = true;
-    askBtn.disabled = true;
-    askStatus.textContent = "Forbereder søgning …";
-    indexPromise = (async function () {
-      var mod = await import(TRANSFORMERS_URL);
-      extractor = await mod.pipeline("feature-extraction", EMBED_MODEL, { dtype: guideIndex.dtype });
-      askStatus.textContent = "";
-    })();
-    indexPromise.catch(fail).then(function () {
-      busy = false;
-      askBtn.disabled = false;
-    });
-  }
-
-  function card(parent, title, body) {
-    var d = document.createElement("details");
-    d.className = "card";
-    var s = document.createElement("summary");
-    s.textContent = title;
-    var p = document.createElement("p");
-    p.className = "body";
-    p.textContent = body;
-    d.appendChild(s);
-    d.appendChild(p);
-    parent.appendChild(d);
-  }
-
-  function renderSources(sectionIndexes, title) {
-    sourcesBox.replaceChildren();
-    sourcesTitle.textContent = title;
-    sourcesTitle.hidden = sectionIndexes.length === 0;
-    sectionIndexes.forEach(function (i) {
-      card(sourcesBox, guide[i].title, guide[i].text);
-    });
-  }
-
-  // Shows a whole block line by line; the hit point (if any) is bold.
-  function renderBlock(hit, parent, hideFrom) {
-    var block = blocks[hit.block];
-    var wrap = document.createElement("div");
-    wrap.className = "answer-block";
-    // A block with a single point would be bold from end to end: no highlight then.
-    var highlight = hit.type === "punkt" && block.segments.reduce(function (n, s) {
-      return n + s.length;
-    }, 0) > 1;
-    block.segments.forEach(function (seg) {
-      var line = document.createElement("div");
-      line.className = "seg";
-      seg.forEach(function (part, i) {
-        if (i > 0) line.appendChild(document.createTextNode(" "));
-        if (highlight && part.pt === hit.pt) {
-          var strong = document.createElement("strong");
-          strong.textContent = part.text;
-          line.appendChild(strong);
-        } else {
-          line.appendChild(document.createTextNode(part.text));
-        }
-      });
-      wrap.appendChild(line);
-    });
-    if (!hideFrom) {
-      var from = document.createElement("small");
-      from.className = "message";
-      from.textContent = "fra: " + guide[block.section].title;
-      wrap.appendChild(from);
-    }
-    parent.appendChild(wrap);
-  }
-
-  // A whole block, or a hit in the block's first (introductory) line, shows the whole block.
-  function hitsWholeBlock(hit) {
-    return hit.type === "blok" ||
-      blocks[hit.block].segments[0].some(function (p) { return p.pt === hit.pt; });
-  }
-
-  // A list item or sentence further down: show only that point, large, with the whole
-  // block folded away below it.
-  function renderAnswer(hit, parent) {
-    if (hitsWholeBlock(hit)) {
-      renderBlock(hit, parent);
+    showView("guide");
+    updateButtons();
+    if (!data.guide_index || !data.guide_index.chunks) {
+      searchStatus.textContent = "No guide_index in the data. Run build_guide_index.mjs and encrypt_data.py.";
       return;
     }
-    var wrap = document.createElement("div");
-    wrap.className = "answer-block";
-    var big = document.createElement("div");
-    big.className = "big";
-    big.textContent = hit.text.replace(BULLET, "");
-    wrap.appendChild(big);
-    var from = document.createElement("small");
-    from.className = "message";
-    from.textContent = "fra: " + guide[blocks[hit.block].section].title;
-    wrap.appendChild(from);
-    var all = document.createElement("details");
-    all.className = "maybe";
-    var allTitle = document.createElement("summary");
-    allTitle.textContent = "Se hele listen";
-    all.appendChild(allTitle);
-    renderBlock(hit, all, true);
-    wrap.appendChild(all);
-    parent.appendChild(wrap);
+    var guide = buildGuideText(data.guide_index.chunks);
+    systemMessage = { role: "system", content: RULES + "\n\nGUIDE:\n\n" + guide.text };
+    messages = [systemMessage];
+    loadSearchModel(data.guide_index); // right after unlock: the gate needs it
+  });
+
+  // ---- Search gate: the same search model as index.html, run in the browser ----
+  async function loadSearchModel(index) {
+    var t0 = performance.now();
+    searchChunks = index.chunks;
+    searchVectors = index.chunks.map(function (c) { return Float32Array.from(c.vector); });
+    searchStatus.textContent = "Loading search model " + index.model + " ...";
+    try {
+      var mod = await import(TRANSFORMERS_URL);
+      searchExtractor = await mod.pipeline("feature-extraction", index.model, {
+        dtype: index.dtype,
+        device: "wasm",
+        progress_callback: function (p) {
+          if (p && typeof p.progress === "number") {
+            searchStatus.textContent = "Loading search model " + index.model + ": " +
+              Math.round(p.progress) + " %" + (p.file ? " (" + p.file + ")" : "");
+          }
+        }
+      });
+      var seconds = ((performance.now() - t0) / 1000).toFixed(1);
+      console.log("[gate] Search model loaded: " + index.model + " (" + index.dtype + ", wasm) in " + seconds + " s");
+      searchStatus.textContent = "Search model ready: " + index.model + " (" + seconds + " s)";
+    } catch (err) {
+      console.error("[gate] Error:", err);
+      searchStatus.textContent = "Error loading search model: " + (err && err.message ? err.message : String(err));
+    }
+    updateButtons();
+  }
+
+  // Dot product of the question with every chunk (vectors are normalized = cosine).
+  async function scoreGuide(text) {
+    var out = await searchExtractor("query: " + text, { pooling: "mean", normalize: true });
+    var qv = out.data;
+    var scored = searchVectors.map(function (v, i) {
+      var dot = 0;
+      for (var k = 0; k < v.length; k++) dot += v[k] * qv[k];
+      return { chunk: searchChunks[i], score: dot };
+    });
+    scored.sort(function (a, b) { return b.score - a.score; });
+    return scored;
+  }
+
+  function top3Lines(scored) {
+    return scored.slice(0, 3).map(function (h) {
+      return h.chunk.type + " | " + h.score.toFixed(3) + " | " + h.chunk.text.replace(/\s+/g, " ").slice(0, 60);
+    }).join("\n");
+  }
+
+  // The gate: the question alone.
+  async function searchGuide(q) {
+    var scored = await scoreGuide(q);
+    console.log("[gate] Best score " + scored[0].score.toFixed(3) + " (GATE_MIN " + GATE_MIN + "). Top 3:\n" +
+      top3Lines(scored));
+    return scored[0];
+  }
+
+  // The source: the question plus the model's visible answer.
+  async function findSource(q, answer) {
+    var scored = await scoreGuide(q + " " + answer);
+    console.log("[source] Best score " + scored[0].score.toFixed(3) + ". Top 3:\n" + top3Lines(scored));
+    return scored[0];
+  }
+
+  // Danish text of the hit's block (for an item: its parent block).
+  function blockTextOf(chunk) {
+    if (chunk.type === "blok") return chunk.text;
+    var parent = searchChunks.find(function (c) { return c.type === "blok" && c.block === chunk.block; });
+    return parent ? parent.text : chunk.text;
+  }
+
+  // ---- Writing model: only loaded when the user clicks "Load AI answers" ----
+  function fail(err) {
+    var msg = err && err.message ? err.message : String(err);
+    console.error("[llm] Error:", err);
+    statusLine.textContent = "Error: " + msg;
+  }
+
+  function isGpuLost(err) {
+    var msg = err && err.message ? err.message : String(err);
+    return /disposed|device.{0,20}lost|out of memory|OOM/i.test(msg);
+  }
+
+  async function loadModel() {
+    if (engine || loading || generating || aiBroken || !hasGpu) return;
+    loading = true;
+    updateButtons();
+    aiStatus.textContent = "Loading " + LLM_ID + " ...";
+    var t0 = performance.now();
+    try {
+      var webllm = await import(WEBLLM_URL);
+      var found = webllm.prebuiltAppConfig.model_list.some(function (m) { return m.model_id === LLM_ID; });
+      if (!found) throw new Error("Model id not in prebuiltAppConfig: " + LLM_ID);
+      var onProgress = function (p) {
+        aiStatus.textContent = "Loading " + LLM_ID + ": " + Math.round((p.progress || 0) * 100) + " % - " + (p.text || "");
+      };
+      engine = await webllm.CreateMLCEngine(LLM_ID, { initProgressCallback: onProgress }, CHAT_OPTS);
+      var seconds = ((performance.now() - t0) / 1000).toFixed(1);
+      console.log("[llm] Model loaded: " + LLM_ID + " in " + seconds + " s");
+      aiStatus.textContent = "AI model ready: " + LLM_ID + " (" + seconds + " s)";
+      resetConversation();
+    } catch (err) {
+      engine = null;
+      aiBroken = true;
+      console.error("[llm] Error:", err);
+      aiStatus.textContent = "The AI model could not be loaded: " + (err && err.message ? err.message : String(err)) +
+        ". Answering with search only.";
+    } finally {
+      loading = false;
+      updateButtons();
+    }
+  }
+
+  // Never show anything between <think> and </think>.
+  function visibleText(text) {
+    return text.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/<think>[\s\S]*$/, "").trim();
+  }
+
+  function addNotice(turn, text) {
+    var n = document.createElement("p");
+    n.className = "notice";
+    n.textContent = text;
+    turn.appendChild(n);
+  }
+
+  // Search-only answer: DN's Danish block of the best hit.
+  function showSearchOnly(turn, aEl, best) {
+    aEl.textContent = blockTextOf(best.chunk);
+    addNotice(turn, SEARCH_NOTICE);
   }
 
   async function ask() {
-    if (busy) return;
-    var q = document.getElementById("question").value.trim();
-    if (!q) {
-      askStatus.textContent = "Skriv et spørgsmål.";
-      return;
+    var q = questionInput.value.trim();
+    if (!q || !searchExtractor || generating) return;
+    questionInput.value = "";
+    questionInput.focus();
+    generating = true;
+    updateButtons();
+
+    // Newest question and answer on top; the previous one moves down to "Earlier questions".
+    var previous = currentBox.firstElementChild;
+    if (previous) {
+      earlierBox.insertBefore(previous, earlierBox.firstChild);
+      earlierTitle.hidden = false;
     }
-    if (items.length === 0) {
-      askStatus.textContent = "Ingen afsnit at søge i.";
-      return;
-    }
-    answerTitle.hidden = true;
-    answerBox.hidden = true;
-    answerBox.replaceChildren();
-    sourcesBox.replaceChildren();
-    sourcesTitle.hidden = true;
-    busy = true;
-    askBtn.disabled = true;
+
+    var turn = document.createElement("div");
+    turn.className = "turn";
+    var qEl = document.createElement("p");
+    qEl.className = "q";
+    qEl.textContent = q;
+    var aEl = document.createElement("p");
+    aEl.className = "a";
+    aEl.textContent = "...";
+    turn.appendChild(qEl);
+    turn.appendChild(aEl);
+    currentBox.replaceChildren(turn);
+
+    // Gate: below GATE_MIN the model is not called and the conversation stays untouched.
+    var best;
     try {
-      askStatus.textContent = "Søger …";
-      await indexPromise;
-      var out = await extractor("query: " + q, { pooling: "mean", normalize: true });
-      var qv = out.data;
-      var scored = vectors.map(function (v, i) {
-        var dot = 0;
-        for (var k = 0; k < v.length; k++) dot += v[k] * qv[k];
-        return { type: items[i].type, block: items[i].block, pt: items[i].pt, text: items[i].text, score: dot };
-      });
-      scored.sort(function (a, b) { return b.score - a.score; });
-      console.log("[guide] De 5 bedste:\n" + scored.slice(0, 5).map(function (h) {
-        return h.type + " | " + h.score.toFixed(3) + " | " + h.text.replace(/\s+/g, " ").slice(0, 60);
-      }).join("\n"));
-      askStatus.textContent = "";
-
-      function sectionOf(h) { return blocks[h.block].section; }
-
-      if (scored[0].score < MIN_SCORE) {
-        console.log("[guide] Bedste score " + scored[0].score.toFixed(3) + " < MIN_SCORE " + MIN_SCORE);
-        answerBox.textContent = "Det står ikke i materialet.";
-        answerBox.hidden = false;
-        var nearest = [];
-        scored.forEach(function (h) {
-          if (nearest.length < 3 && nearest.indexOf(sectionOf(h)) === -1) nearest.push(sectionOf(h));
-        });
-        renderSources(nearest, "Nærmeste afsnit");
-        return;
-      }
-      var shown = [scored[0]];
-      var other = scored.find(function (h) { return h.block !== scored[0].block; });
-      if (other && scored[0].score - other.score <= NEAR_SCORE) shown.push(other);
-      renderAnswer(shown[0], answerBox);
-      if (shown[1]) {
-        // The extra block is only a maybe: collapsed, below the answer.
-        var maybe = document.createElement("details");
-        maybe.className = "maybe";
-        var maybeTitle = document.createElement("summary");
-        maybeTitle.textContent = "Måske også relevant";
-        maybe.appendChild(maybeTitle);
-        renderBlock(shown[1], maybe);
-        answerBox.appendChild(maybe);
-      }
-      answerTitle.hidden = false;
-      answerBox.hidden = false;
-      var sections = [];
-      shown.forEach(function (h) {
-        if (sections.indexOf(sectionOf(h)) === -1) sections.push(sectionOf(h));
-      });
-      renderSources(sections, "Kilder");
+      statusLine.textContent = "Searching…";
+      best = await searchGuide(q);
     } catch (err) {
+      aEl.textContent = "(failed)";
       fail(err);
+      generating = false;
+      updateButtons();
+      return;
+    }
+    if (best.score < GATE_MIN) {
+      console.log("[gate] Below GATE_MIN - WebLLM not called, nothing added to the conversation");
+      aEl.textContent = "That is not in the guide.";
+      statusLine.textContent = "";
+      generating = false;
+      updateButtons();
+      return;
+    }
+
+    // Search only: no writing model loaded, or it failed.
+    if (!aiActive()) {
+      showSearchOnly(turn, aEl, best);
+      statusLine.textContent = "";
+      generating = false;
+      updateButtons();
+      return;
+    }
+
+    // The page shows only q; the model gets (and the conversation stores) the wrapped text.
+    messages.push({
+      role: "user",
+      content: "New question. Earlier questions and answers do not matter. " +
+        "Look for the answer in the guide again. Question: " + q
+    });
+    var t0 = performance.now();
+    var firstTokenAt = null;
+    var text = "";
+    var usage = null;
+    var failed = false;
+    aEl.textContent = ""; // the answer is not streamed; it is shown after the checks
+    statusLine.textContent = "Writing answer…";
+    console.log("[llm] Turns in conversation: " + (messages.length - 1) +
+      " (user and assistant messages incl. the new question, excl. system)");
+    try {
+      var stream = await engine.chat.completions.create({
+        messages: messages,
+        stream: true,
+        stream_options: { include_usage: true },
+        temperature: 0,
+        max_tokens: 400,
+        extra_body: { enable_thinking: false }
+      });
+      for await (var chunk of stream) {
+        if (chunk.usage) usage = chunk.usage;
+        var delta = (chunk.choices[0] && chunk.choices[0].delta.content) || "";
+        if (!delta) continue;
+        if (firstTokenAt === null) {
+          firstTokenAt = performance.now();
+          console.log("[llm] Time to first token: " + ((firstTokenAt - t0) / 1000).toFixed(2) + " s");
+        }
+        text += delta;
+      }
+      // Stored exactly as WebLLM returned it (incl. the empty <think></think> block): WebLLM
+      // only reuses its KV cache if the history equals the conversation it kept internally.
+      // This stays so even when the check below replaces what is shown.
+      messages.push({ role: "assistant", content: text });
+      statusLine.textContent = "Checking answer…";
+      // The source is chosen from question + visible answer. A failure here only means
+      // no source is shown (and the answer cannot be checked); the conversation is final.
+      try {
+        var answer = visibleText(text);
+        var source = await findSource(q, answer);
+        var reasons = [];
+        console.log("[check] Source score " + source.score.toFixed(3) + " (SOURCE_MIN " + SOURCE_MIN + ")");
+        if (source.score < SOURCE_MIN) reasons.push("source");
+        // Sentence check: every sentence must be found in the guide on its own.
+        var sentenceFailed = false;
+        // Pieces: split on line breaks and after . ? ! + space; list markers are removed
+        // and pieces without letters are skipped.
+        var parts = [];
+        answer.split("\n").forEach(function (line) {
+          line.replace(/^\s*(?:\d+[.)]|[-*])\s+/, "").split(/(?<=[.?!])\s+/).forEach(function (piece) {
+            piece = piece.replace(/^\s*(?:\d+[.)]|[-*])\s+/, "").trim();
+            if (/\p{L}/u.test(piece)) parts.push(piece);
+          });
+        });
+        for (var si = 0; si < parts.length; si++) {
+          var sentence = parts[si];
+          var words = sentence.split(/\s+/).length;
+          // Short pieces are too vague alone, so they get the question as context.
+          var scoredSentence = await scoreGuide(words >= 8 ? sentence : q + " " + sentence);
+          console.log("[check] " + scoredSentence[0].score.toFixed(3) + " | " + sentence.slice(0, 60));
+          if (scoredSentence[0].score < SENTENCE_MIN) sentenceFailed = true;
+        }
+        if (sentenceFailed) reasons.unshift("sentence");
+        if (reasons.length > 0) {
+          console.log("[check] Answer replaced (reason: " + reasons.join(" / ") + ")");
+          aEl.textContent = "That is not in the guide.";
+          return;
+        }
+        console.log("[check] Answer kept");
+        aEl.textContent = answer;
+        addNotice(turn, AI_NOTICE);
+        var srcLabel = document.createElement("p");
+        srcLabel.className = "src-label";
+        srcLabel.textContent = "Source (DN's text):";
+        var srcText = document.createElement("p");
+        srcText.className = "src";
+        srcText.textContent = blockTextOf(source.chunk);
+        turn.appendChild(srcLabel);
+        turn.appendChild(srcText);
+      } catch (srcErr) {
+        console.error("[source] Error:", srcErr);
+        console.log("[check] Skipped: the source search failed, so the answer is kept unchecked");
+        aEl.textContent = visibleText(text);
+        addNotice(turn, AI_NOTICE);
+      }
+    } catch (err) {
+      failed = true;
+      messages.pop(); // the unanswered question is not part of the conversation
+      console.error("[llm] Error:", err);
+      if (isGpuLost(err)) aiBroken = true; // device lost: AI answers stay off
+      // Fall back to search only for this question.
+      showSearchOnly(turn, aEl, best);
+      statusLine.textContent = "The AI model failed (" + (err && err.message ? err.message : String(err)) +
+        "). Showing search only.";
     } finally {
-      busy = false;
-      askBtn.disabled = false;
+      if (!failed) statusLine.textContent = ""; // the answer (or the refusal) is shown now
+      var total = ((performance.now() - t0) / 1000).toFixed(2);
+      console.log("[llm] Total time: " + total + " s" + (failed ? " (failed)" : ""));
+      if (usage) {
+        var extra = usage.extra || {};
+        console.log("[llm] Usage: prompt tokens " + usage.prompt_tokens +
+          ", completion tokens " + usage.completion_tokens +
+          ", prefill tokens/s " + extra.prefill_tokens_per_s +
+          ", decode tokens/s " + extra.decode_tokens_per_s);
+      } else {
+        console.log("[llm] No usage reported");
+      }
+      generating = false;
+      updateButtons();
     }
   }
 
+  loadBtn.addEventListener("click", loadModel);
+  resetBtn.addEventListener("click", function () {
+    resetConversation();
+    statusLine.textContent = "New conversation.";
+  });
   document.getElementById("ask-form").addEventListener("submit", function (e) {
     e.preventDefault();
     ask();
   });
+
+  updateMode();
 
   fetch("data.enc.json")
     .then(function (res) {
@@ -555,7 +739,7 @@
     })
     .then(function (data) { encrypted = data; })
     .catch(function () {
-      lockMessage.textContent = "Kunne ikke indlæse data.";
+      lockMessage.textContent = "Could not load data.";
     });
 </script>
 </body>
